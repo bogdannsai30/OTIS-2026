@@ -2,7 +2,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,7 +34,8 @@ public:
 };
 
 class FirstOrderModel : public Model {
-    double a, b;
+    double a;
+    double b;
 public:
     FirstOrderModel(double aValue, double bValue) : a(aValue), b(bValue) {}
     double next(double y, double u, int) const override { return a * y + b * u; }
@@ -51,10 +51,13 @@ double deadZone(double y, double delta) {
 }
 
 class DeadZoneModel : public Model {
-    double a, b, delta;
+    double a;
+    double b;
+    double delta;
 public:
     DeadZoneModel(double aValue, double bValue, double deltaValue)
-        : a(aValue), b(bValue), delta(deltaValue) {}
+        : a(aValue), b(bValue), delta(deltaValue) {
+    }
     double next(double y, double, int) const override {
         return a * y + b * deadZone(y, delta);
     }
@@ -62,7 +65,8 @@ public:
 };
 
 class HarmonicForceModel : public Model {
-    double b, dt;
+    double b;
+    double dt;
 public:
     HarmonicForceModel(double bValue, double dtValue) : b(bValue), dt(dtValue) {}
     // Euler discretization of dy/dt = b * sin(t).
@@ -73,7 +77,7 @@ public:
 };
 
 void simulate(const Model& model, InputType inputType, int n, double y0,
-              const string& filename) {
+    const string& filename) {
     ofstream out(filename);
     if (!out) {
         cerr << "Cannot open output file: " << filename << '\n';
@@ -88,7 +92,7 @@ void simulate(const Model& model, InputType inputType, int n, double y0,
     for (int t = 0; t < n; ++t) {
         double u = inputValue(inputType, t);
         cout << left << setw(8) << t << setw(16) << fixed << setprecision(6)
-             << u << setw(16) << y << '\n';
+            << u << setw(16) << y << '\n';
         out << t << ',' << setprecision(10) << u << ',' << y << '\n';
         y = model.next(y, u, t);
     }
@@ -104,7 +108,9 @@ int main() {
         return 1;
     }
 
-    double a, b, y0;
+    double a;
+    double b;
+    double y0;
     cout << "Enter coefficients a and b for Model 1.1: ";
     cin >> a >> b;
     cout << "Initial value y0: ";
@@ -113,11 +119,14 @@ int main() {
     FirstOrderModel first(a, b);
     if (first.hasLinearStabilityCheck() && !first.isStable()) {
         cout << "WARNING: Model 1.1 is unstable for this coefficient: |a| >= 1.\n";
-    } else {
+    }
+    else {
         cout << "Model 1.1 stability condition |a| < 1 is satisfied.\n";
     }
 
-    double a2, b2, delta;
+    double a2;
+    double b2;
+    double delta;
     cout << "Enter coefficients a and b and dead-zone width delta for Model 2.3: ";
     cin >> a2 >> b2 >> delta;
     if (delta < 0) {
@@ -125,7 +134,8 @@ int main() {
         return 1;
     }
 
-    double b3, dt;
+    double b3;
+    double dt;
     cout << "Enter coefficient b and time step dt for Model 3.5 (dt > 0): ";
     cin >> b3 >> dt;
     if (dt <= 0) {
@@ -136,7 +146,7 @@ int main() {
     DeadZoneModel deadZoneModel(a2, b2, delta);
     HarmonicForceModel harmonicModel(b3, dt);
 
-    vector<InputType> inputs = {InputType::Step, InputType::Impulse, InputType::Harmonic};
+    vector inputs = { InputType::Step, InputType::Impulse, InputType::Harmonic };
     for (InputType type : inputs) {
         simulate(first, type, n, y0, "model11_" + inputName(type) + ".csv");
         simulate(deadZoneModel, type, n, y0, "model23_" + inputName(type) + ".csv");
